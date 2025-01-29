@@ -1,0 +1,3 @@
+[submodule "modules/bundler"]
+	path = modules/bundler
+	url = git@github.com:psettle/cg-cpp-bundler.git
