@@ -1,0 +1,18 @@
+{
+  "configurations": [
+    {
+      "name": "Neural",
+      "intelliSenseMode": "linux-gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "c17",
+      "cppStandard": "gnu++20",
+      "includePath": [
+        "${workspaceFolder}/src/util",
+        "${workspaceFolder}/src/neural",
+        "${workspaceFolder}/src/engine",
+        "${workspaceFolder}/src/agent/mcts"
+      ]
+    }
+  ],
+  "version": 4
+}

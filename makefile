@@ -1,5 +1,5 @@
 #config
-DEBUG=0
+DEBUG=1
 
 #setup
 SOURCES=
@@ -13,7 +13,9 @@ INCLUDE += src/test
 INCLUDE += src/util
 
 #source includes
-SOURCES += src/main.cpp
+#SOURCES += src/main.cpp
+SOURCES += src/engine/engine_GameState.cpp
+SOURCES += src/neural/neural_Tensor.cpp
 
 #more setup
 EXECUTABLE=out/photo.exe

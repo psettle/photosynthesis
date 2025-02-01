@@ -134,6 +134,15 @@ inline auto constexpr MakeSeedDestinationTable() {
 
 static auto constexpr SEED_DESTINATIONS = MakeSeedDestinationTable();
 
+template <class Callable>
+inline void IterateTrees(uint64_t trees, Callable&& callable) {
+  while (trees != 0) {
+    int offset = __builtin_ctzll(trees);
+    callable(static_cast<u_int>(offset));
+    trees &= ~(1ull << offset);
+  }
+}
+
 }  // namespace engine
 
 #endif /* __INCLUDE_GUARD_ENGINE_TABLES_HPP */
