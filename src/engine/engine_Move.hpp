@@ -85,7 +85,8 @@ class Move {
 
 }  // namespace engine
 
-std::ostream& operator<<(std::ostream& os, engine::Move const& move) {
+static inline std::ostream& operator<<(std::ostream& os,
+                                       engine::Move const& move) {
   switch (move.GetType()) {
     case engine::Move::Type::kWait:
       os << "WAIT";

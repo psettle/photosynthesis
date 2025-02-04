@@ -21,7 +21,7 @@ class Agent {
 
   virtual void Init() { GameState::ReadBoard(*input_, arid_); }
 
-  void Turn() {
+  Move Turn() {
     util::TimeStamp start;
     GameState state = GameState::FromStream(*input_, start, arid_);
 
@@ -30,6 +30,7 @@ class Agent {
     // std::cerr << "D: " << start.Since() << std::endl;
 
     *output_ << move << std::endl;
+    return move;
   }
 
   virtual Move ChooseMove(GameState const& state,

@@ -14,7 +14,7 @@ inline u_int popcnt(uint64_t v) {
   return static_cast<u_int>(__builtin_popcountll(v));
 }
 
-static bool constexpr ENABLE_ASSERTS = true;
+static bool constexpr ENABLE_ASSERTS = false;
 
 template <class It, class Evaluate>
 It MaxElement(It begin, It end, Evaluate&& evaluate) {
@@ -37,13 +37,13 @@ It MaxElement(It begin, It end, Evaluate&& evaluate) {
 #define __stringize(a) #a
 #define stringize(a) __stringize(a)
 
-#define ASSERT(cond)                                            \
-  do {                                                          \
-    if constexpr (::util::ENABLE_ASSERTS) {                     \
-      if (!(cond)) {                                            \
-        throw std::logic_error(stringize(__LINE__) ": " #cond); \
-      }                                                         \
-    }                                                           \
+#define ASSERT(cond)                                                     \
+  do {                                                                   \
+    if constexpr (::util::ENABLE_ASSERTS) {                              \
+      if (!(cond)) {                                                     \
+        throw std::logic_error(__FILE__ stringize(__LINE__) ": " #cond); \
+      }                                                                  \
+    }                                                                    \
   } while (false)
 
 #endif /* __INCLUDE_GUARD_UTIL_GENERAL_HPP */

@@ -452,4 +452,28 @@ void GameState::EndDay() {
   SetDay(day);
 }
 
+void GameState::Serialize(std::ostream& out) const {
+  for (auto const& t : trees_) {
+    out.write(reinterpret_cast<char const*>(&t), sizeof(t));
+  }
+  for (auto const& o : owner_) {
+    out.write(reinterpret_cast<char const*>(&o), sizeof(o));
+  }
+  out.write(reinterpret_cast<char const*>(&dormant_), sizeof(dormant_));
+}
+
+GameState GameState::Deserialize(std::istream& in) {
+  GameState g;
+
+  for (auto& t : g.trees_) {
+    in.read(reinterpret_cast<char*>(&t), sizeof(t));
+  }
+  for (auto& o : g.owner_) {
+    in.read(reinterpret_cast<char*>(&o), sizeof(o));
+  }
+  in.read(reinterpret_cast<char*>(&g.dormant_), sizeof(g.dormant_));
+
+  return g;
+}
+
 }  // namespace engine

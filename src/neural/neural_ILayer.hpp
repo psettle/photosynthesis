@@ -10,9 +10,12 @@ class ILayer {
   virtual ~ILayer() = default;
 
   virtual FloatTensor Forward(FloatTensor const& input) = 0;
+  virtual FloatTensor Forward(FloatTensor&& input) const = 0;
 
   virtual FloatTensor Backwards(FloatTensor const& output_gradient,
                                 float learn_rate) = 0;
+
+  virtual void Serialize(std::ostream& out) const = 0;
 };
 
 }  // namespace neural

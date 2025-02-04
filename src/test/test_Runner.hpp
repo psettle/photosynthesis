@@ -11,14 +11,15 @@
 namespace test {
 
 namespace internal {
+
 struct TestControl {
-  std::unique_ptr<engine::Agent> left;
-  std::unique_ptr<engine::Agent> right;
+  engine::IAgentFactory const* left;
+  engine::IAgentFactory const* right;
   u_int n_games;
-  u_int left_wins{};
-  u_int right_wins{};
   pthread_t thread{};
   u_int index;
+  pthread_mutex_t* mutex;
+  std::vector<engine::Episode>* all_episodes;
 };
 
 static void* RunTestsThread(void* ptr) {
@@ -30,15 +31,14 @@ static void* RunTestsThread(void* ptr) {
   }
 
   for (size_t i = 0u; i < ctrl.n_games; ++i) {
-    auto result = engine::Referee::PlayGame(*ctrl.left, *ctrl.right);
-    if (result.winner == 0) {
-      ctrl.left_wins++;
-    } else if (result.winner == 1) {
-      ctrl.right_wins++;
-    }
+    auto result = engine::Referee::CollectEpisode(*ctrl.left, *ctrl.right);
+
+    pthread_mutex_lock(ctrl.mutex);
+    ctrl.all_episodes->emplace_back(std::move(result));
+    pthread_mutex_unlock(ctrl.mutex);
 
     if (is_prime) {
-      std::cerr << (i + 1) << "/" << ctrl.n_games << std::endl;
+      // std::cerr << (i + 1) << "/" << ctrl.n_games << std::endl;
     }
   }
 
@@ -46,36 +46,35 @@ static void* RunTestsThread(void* ptr) {
 }
 }  // namespace internal
 
-struct TestResult {
-  u_int left_wins{0u};
-  u_int right_wins{0u};
-  u_int n_games{0u};
-};
+std::vector<engine::Episode> Test(engine::IAgentFactory const& left,
+                                  engine::IAgentFactory const& right,
+                                  size_t n_samples, size_t n_threads) {
+  pthread_mutex_t mutex;
+  pthread_mutex_init(&mutex, nullptr);
 
-template <class Left, class Right>
-TestResult Test(size_t n_samples, size_t n_threads) {
+  std::vector<engine::Episode> episodes;
+
   std::vector<internal::TestControl> tests(n_threads);
 
   for (u_int i = 0; i < n_threads; ++i) {
     auto& test = tests[i];
-    test.left = std::make_unique<Left>();
-    test.right = std::make_unique<Right>();
+    test.left = &left;
+    test.right = &right;
     test.n_games = n_samples / n_threads;
     test.index = i;
+    test.mutex = &mutex;
+    test.all_episodes = &episodes;
     pthread_create(&test.thread, NULL, internal::RunTestsThread, &test);
   }
 
-  TestResult result{};
-
   for (auto& test : tests) {
     pthread_join(test.thread, NULL);
-    result.left_wins += test.left_wins;
-    result.right_wins += test.right_wins;
-    result.n_games += test.n_games;
   }
 
-  return result;
-}
+  pthread_mutex_destroy(&mutex);
+
+  return episodes;
+}  // namespace test
 
 }  // namespace test
 

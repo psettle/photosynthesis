@@ -140,6 +140,13 @@ class GameState {
   uint64_t GetPlayerTrees(u_int player) const {
     return GetAllTrees() & owner_[player];
   }
+  uint64_t GetPlayerTrees(u_int player, u_int s) const {
+    return GetTrees(s) & owner_[player];
+  }
+
+  void Serialize(std::ostream& out) const;
+
+  static GameState Deserialize(std::istream& in);
 
  private:
   void GetMoves(u_int player, void (*callback)(Move const& m, void* data),
@@ -164,10 +171,6 @@ class GameState {
   uint8_t GetLastNutrients() const { return GetByte(40u, trees_[2]); }
 
   static u_int GetTreeFixedCost(u_int size) { return (1u << size) - 1u; }
-
-  uint64_t GetPlayerTrees(u_int player, u_int size) const {
-    return GetTrees(size) & owner_[player];
-  }
 
   void GrowTree(u_int offset, u_int player, u_int size, u_int cost) {
     auto tree = GetTree(offset);

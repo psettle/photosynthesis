@@ -1,5 +1,5 @@
 #config
-DEBUG=1
+DEBUG=0
 
 #setup
 SOURCES=
@@ -8,14 +8,17 @@ INCLUDE=
 
 #header includes
 INCLUDE += src/agent/mcts
+INCLUDE += src/agent/neural_mcts
 INCLUDE += src/engine
 INCLUDE += src/test
 INCLUDE += src/util
+INCLUDE += src/neural
 
 #source includes
-#SOURCES += src/main.cpp
+SOURCES += src/main.cpp
 SOURCES += src/engine/engine_GameState.cpp
-SOURCES += src/neural/neural_Tensor.cpp
+#SOURCES += src/agent/neural_mcts/train_network_main.cpp
+#SOURCES += src/create_training_data_main.cpp
 
 #more setup
 EXECUTABLE=out/photo.exe

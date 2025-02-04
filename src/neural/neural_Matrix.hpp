@@ -3,6 +3,7 @@
 
 #include <array>
 #include <cstring>
+#include <iostream>
 #include <stdexcept>
 #include <vector>
 
@@ -67,6 +68,36 @@ class Matrix {
     }
   }
 
+  void Serialize(std::ostream& out) const {
+    u_int n_d = 2;
+    out.write(reinterpret_cast<char const*>(&n_d), sizeof(n_d));
+
+    for (auto const& d : dimensions_) {
+      out.write(reinterpret_cast<char const*>(&d), sizeof(d));
+    }
+    for (auto const& t : storage_) {
+      out.write(reinterpret_cast<char const*>(&t), sizeof(t));
+    }
+  }
+
+  static Matrix<T> Deserialize(std::istream& in) {
+    u_int n_d;
+    in.read(reinterpret_cast<char*>(&n_d), sizeof(n_d));
+    ASSERT(n_d == 2);
+
+    u_int r, c;
+    in.read(reinterpret_cast<char*>(&r), sizeof(r));
+    in.read(reinterpret_cast<char*>(&c), sizeof(c));
+
+    Matrix<T> result(r, c);
+
+    for (auto& t : result.storage_) {
+      in.read(reinterpret_cast<char*>(&t), sizeof(t));
+    }
+
+    return result;
+  }
+
  private:
   std::vector<T> storage_;
   std::array<u_int, 2> dimensions_;
@@ -87,7 +118,7 @@ void ElementWiseOperation(Matrix<T> const& left, Matrix<T> const& right,
   ASSERT(SizeEqual(output.shape(), right.shape()));
 
   for (u_int i = 0u; i < left.size(); ++i) {
-    output.Get(i) = op(left.Get(i), right.Get(i));
+    output.Set(i, op(left.Get(i), right.Get(i)));
   }
 }
 
@@ -142,6 +173,13 @@ template <class T>
 Matrix<T> Square(Matrix<T> const& input) {
   Matrix<T> result(input.shape());
   UnaryOperation(input, result, [](T i) { return i * i; });
+  return result;
+}
+
+template <class T>
+Matrix<T> TanH(Matrix<T> const& input) {
+  Matrix<T> result(input.shape());
+  UnaryOperation(input, result, [](T i) { return std::tanh(i); });
   return result;
 }
 
@@ -211,6 +249,17 @@ neural::Matrix<T> operator-(neural::Matrix<T> const& left,
   neural::ElementWiseOperation(left, right, result,
                                [](T l, T r) { return l - r; });
   return result;
+}
+
+template <class T>
+bool operator==(neural::Matrix<T> const& left, neural::Matrix<T> const& right) {
+  neural::Matrix<bool> result(left.shape());
+  bool ret = true;
+  neural::ElementWiseOperation(left, right, result, [&](T l, T r) {
+    ret = ret && (l == r);
+    return true;
+  });
+  return ret;
 }
 
 template <class T>

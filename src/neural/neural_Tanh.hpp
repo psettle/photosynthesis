@@ -1,35 +1,33 @@
-#ifndef __INCLUDE_GUARD_NEURAL_RELU
-#define __INCLUDE_GUARD_NEURAL_RELU
+#ifndef __INCLUDE_GUARD_NEURAL_TANH
+#define __INCLUDE_GUARD_NEURAL_TANH
 
 #include "neural_ILayer.hpp"
 #include "neural_Matrix.hpp"
 
 namespace neural {
 
-class ReLU : public ILayer {
+class TanHActivation : public ILayer {
  public:
   FloatTensor Forward(FloatTensor const& input) override {
-    input_ = input;
-    return Max(input_, 0.0f);
+    input_ = TanH(input);
+    return input_;
   }
 
   FloatTensor Forward(FloatTensor&& input) const override {
-    return Max(std::move(input), 0.0f);
+    return TanH(input);
   }
 
   FloatTensor Backwards(FloatTensor const& output_gradient,
                         float learn_rate) override {
-    auto ge = Ge(input_, 0.0f);
-    auto input_gradient = output_gradient * Ternary(ge, 1.0f, 0.0f);
-    return input_gradient;
+    return (Square(input_) - 1.0f) * -1.0f;
   }
 
   void Serialize(std::ostream& out) const override {
-    char byte = 'R';
+    char byte = 'T';
     out.write(&byte, 1);
   }
-  static std::unique_ptr<ReLU> Deserialize(std::istream& in) {
-    return std::make_unique<ReLU>();
+  static std::unique_ptr<TanHActivation> Deserialize(std::istream& in) {
+    return std::make_unique<TanHActivation>();
   }
 
  private:

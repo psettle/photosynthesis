@@ -87,7 +87,11 @@
     "cfenv": "cpp",
     "typeindex": "cpp",
     "valarray": "cpp",
-    "variant": "cpp"
+    "variant": "cpp",
+    "__config": "cpp",
+    "__threading_support": "cpp",
+    "__mutex_base": "cpp",
+    "stack": "cpp"
   },
   "java.compile.nullAnalysis.mode": "disabled"
 }

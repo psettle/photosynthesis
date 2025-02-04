@@ -3,29 +3,84 @@
 
 #include <cmath>
 #include <cstdint>
+#include <memory>
 #include <sstream>
+#include <vector>
 
 #include "engine_Agent.hpp"
 #include "engine_GameState.hpp"
 #include "util_General.hpp"
 
 namespace engine {
-class Referee {
+
+class IAgentFactory {
  public:
-  struct Result {
-    // 0 -> p0
-    // 1 -> p1
-    // 2 -> Tie
+  virtual std::unique_ptr<Agent> MakeAgent() const = 0;
+};
+
+struct Episode {
+  struct Frame {
+    GameState state;
+    Move move;
+    u_int player;
     u_int winner;
+    uint64_t arid;
+
+    Frame(GameState const& a_state, Move a_move, u_int a_player,
+          uint64_t a_arid)
+        : state(a_state),
+          move(a_move),
+          player(a_player),
+          winner(2),
+          arid(a_arid) {}
   };
 
+  std::vector<Frame> episode;
+};
+
+class Referee {
+ private:
   struct Player {
     Agent* a;
     std::istringstream in{};
     std::ostringstream out{};
   };
 
-  static Result PlayGame(Agent& p0, Agent& p1) {
+  struct Observer {
+    void (*frame)(engine::GameState const& s, Move const& m, u_int player,
+                  uint64_t arid, void* user_data);
+    void (*end)(u_int winner, void* user_data);
+    void* user_data;
+  };
+
+ public:
+  static Episode CollectEpisode(IAgentFactory const& left,
+                                IAgentFactory const& right) {
+    auto left_agent = left.MakeAgent();
+    auto right_agent = right.MakeAgent();
+
+    Episode e{};
+    e.episode.reserve(150);
+
+    Observer o = {[](engine::GameState const& s, Move const& m, u_int player,
+                     uint64_t arid, void* user_data) {
+                    auto p_e = static_cast<Episode*>(user_data);
+                    p_e->episode.emplace_back(s, m, player, arid);
+                  },
+                  [](u_int winner, void* user_data) {
+                    auto p_e = static_cast<Episode*>(user_data);
+                    for (auto& f : p_e->episode) {
+                      f.winner = winner;
+                    }
+                  },
+                  &e};
+
+    PlayGame(*left_agent, *right_agent, &o);
+    return e;
+  }
+
+  static u_int PlayGame(Agent& p0, Agent& p1,
+                        Observer const* observer = nullptr) {
     std::array<Player, 2> players{Player{&p0}, Player{&p1}};
 
     uint64_t arid;
@@ -37,9 +92,9 @@ class Referee {
 
     while (!g.IsTerminal()) {
       if (g.IsWaiting(0) || g.IsWaiting(1)) {
-        Turn(players[g.NextPlayer()], g, arid);
+        Turn(players[g.NextPlayer()], g, arid, observer);
       } else {
-        Turn(players[0], players[1], g, arid);
+        Turn(players[0], players[1], g, arid, observer);
       }
     }
 
@@ -62,7 +117,11 @@ class Referee {
       }
     }
 
-    return Result{winner};
+    if (observer) {
+      observer->end(winner, observer->user_data);
+    }
+
+    return winner;
   }
 
  private:
@@ -87,17 +146,28 @@ class Referee {
     p.a->Init();
   }
 
-  static void Turn(Player& p, GameState& g, uint64_t const& arid) {
+  static void Turn(Player& p, GameState& g, uint64_t const& arid,
+                   Observer const* observer) {
     SetInput(p, g, arid, g.NextPlayer());
-    p.a->Turn();
+    auto move = p.a->Turn();
+    if (observer) {
+      observer->frame(g, move, g.NextPlayer(), arid, observer->user_data);
+    }
     ReadOutput(p, g, arid, g.NextPlayer());
   }
 
-  static void Turn(Player& p0, Player& p1, GameState& g, uint64_t const& arid) {
+  static void Turn(Player& p0, Player& p1, GameState& g, uint64_t const& arid,
+                   Observer const* observer) {
     SetInput(p0, g, arid, 0);
     SetInput(p1, g, arid, 1);
-    p0.a->Turn();
-    p1.a->Turn();
+    auto p0_move = p0.a->Turn();
+    auto p1_move = p1.a->Turn();
+
+    if (observer) {
+      observer->frame(g, p0_move, 0, arid, observer->user_data);
+      observer->frame(g, p1_move, 1, arid, observer->user_data);
+    }
+
     ReadOutput(p0, g, arid, 0);
     ReadOutput(p1, g, arid, 1);
   }
@@ -116,7 +186,7 @@ class Referee {
     turn_input << util::popcnt(g.GetAllTrees()) << "\n";
 
     for (u_int s = 0; s < 4; ++s) {
-      g.IterateTrees(g.GetTrees(s), [&](u_int offset) {
+      IterateTrees(g.GetTrees(s), [&](u_int offset) {
         turn_input << offset << " " << s << " "
                    << ((g.GetOwner(player) & GetTree(offset)) ? 1 : 0) << " "
                    << ((g.GetDormant() & GetTree(offset)) ? 1 : 0) << "\n";

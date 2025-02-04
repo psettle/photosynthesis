@@ -1,6 +1,7 @@
 #ifndef __INCLUDE_GUARD_AGENT_MCTS_HPP
 #define __INCLUDE_GUARD_AGENT_MCTS_HPP
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <optional>
@@ -34,11 +35,22 @@ class Mcts : public engine::Agent {
           preceeding(a_preceeding) {}
   };
 
+  virtual float Heuristic(GameState const& gamestate) {
+    return Simulate(gamestate);
+  }
+
   void Init() override {
     Agent::Init();
-    root_.reset();
+    ResetHistory();
     first_turn_ = true;
   }
+
+  virtual bool CheckLimit(TimeStamp const& start, size_t n_rollouts,
+                          bool first_turn) {
+    return start.Since() >= (first_turn ? 0.995 : 0.095);
+  }
+
+  void ResetHistory() { root_.reset(); }
 
   Move ChooseMove(GameState const& state, TimeStamp const& start) override {
     if (!TrackActualAction(state)) {
@@ -57,10 +69,11 @@ class Mcts : public engine::Agent {
         Expand(expand_path);
       }
 
-      float score = Simulate(expand_path.back()->gs);
+      float score = Heuristic(expand_path.back()->gs);
+
       Backup(expand_path, score);
 
-      if (start.Since() >= (first_turn_ ? 0.995 : 0.095)) {
+      if (CheckLimit(start, root.n_rollouts, first_turn_)) {
         break;
       }
     }
@@ -83,6 +96,7 @@ class Mcts : public engine::Agent {
 
     Node local = std::move(*best);
     root_ = std::move(local);
+    // std::cerr << "*" << root_.value().preceeding << "\n" << std::endl;
     return root_.value().preceeding;
   }
 

@@ -10,7 +10,9 @@
         "${workspaceFolder}/src/util",
         "${workspaceFolder}/src/neural",
         "${workspaceFolder}/src/engine",
-        "${workspaceFolder}/src/agent/mcts"
+        "${workspaceFolder}/src/agent/mcts",
+        "${workspaceFolder}/src/agent/neural_mcts",
+        "${workspaceFolder}/src/test"
       ]
     }
   ],

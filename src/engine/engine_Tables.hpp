@@ -134,6 +134,23 @@ inline auto constexpr MakeSeedDestinationTable() {
 
 static auto constexpr SEED_DESTINATIONS = MakeSeedDestinationTable();
 
+inline auto constexpr MakeSeedMoves() {
+  uint64_t n_moves = 0;
+
+  for (u_int t = 0; t < N_TREES; ++t) {
+    auto seeds = SEED_DESTINATIONS[2][t] & ~SEED_DESTINATIONS[0][t];
+    for (u_int d = 0; d < N_TREES; ++d) {
+      if (GetTree(d) & seeds) {
+        n_moves++;
+      }
+    }
+  }
+
+  return n_moves;
+}
+
+static auto constexpr SEED_MOVES = MakeSeedMoves();
+
 template <class Callable>
 inline void IterateTrees(uint64_t trees, Callable&& callable) {
   while (trees != 0) {
